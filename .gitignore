@@ -1,0 +1,14 @@
+.env
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.venv/
+venv/
+node_modules/
+frontend/dist/
+data/documents/*
+!data/documents/.gitkeep
+data/faiss_index/*
+!data/faiss_index/.gitkeep
+data/memory/*.json
+!data/memory/.gitkeep

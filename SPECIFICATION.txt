@@ -1,0 +1,624 @@
+# Project: Study Buddy AI — Multi-Agent Personalized Learning Assistant
+
+Act as a senior AI engineer and full-stack developer. Build a complete, functional, locally runnable **Agentic AI-powered Study Buddy** from scratch in the currently opened VS Code workspace.
+
+Do not just provide suggestions or code snippets. Create the actual project folders, files, backend, frontend, agent workflows, configurations, and documentation. Implement and test the application step by step.
+
+## 1. Project objective
+
+Transform a traditional RAG-based Study Buddy into a genuinely agentic AI learning platform where multiple specialized AI agents collaborate to help students learn, prepare for exams, identify weaknesses, and improve their performance.
+
+The system must demonstrate:
+- Multiple specialized AI agents.
+- An orchestrator that delegates tasks to agents.
+- Tool calling and decision-making.
+- Shared state between agents.
+- Conditional workflow execution.
+- Agent collaboration and communication.
+- Local memory and learning history.
+- Adaptive learning based on quiz performance.
+
+This must be a real multi-agent application, not a chatbot with multiple agent names.
+
+## 2. Strict technology requirements
+
+Use ONLY the following stack.
+
+### LLM
+- Model: GPT-4.1-mini.
+- API: OpenAI-compatible API endpoint.
+- Use the deployment name provided in the environment configuration.
+- All agents must use this same model deployment.
+- Do not use Gemini, Claude, Groq, or any other LLM provider.
+
+### Backend
+- Python 3.11+
+- FastAPI
+- LangGraph for agent orchestration.
+- LangChain where useful.
+- Pydantic for structured outputs.
+- PyPDF for PDF extraction.
+
+### RAG
+- FAISS for local vector storage.
+- sentence-transformers/all-MiniLM-L6-v2 for local embeddings.
+- Chunking with appropriate overlap.
+- Metadata containing document name and page number.
+- Answers grounded in uploaded study materials.
+- Proper page citations.
+
+### Frontend
+- React.
+- TypeScript.
+- Vite.
+- Tailwind CSS.
+- shadcn/ui or clean reusable components.
+- Lucide icons.
+
+### Local persistence
+- Python dictionaries for active session state.
+- JSON files for learning history, quiz results, study plans, and preferences.
+- Local folders for uploaded PDFs and FAISS indexes.
+
+STRICTLY DO NOT USE:
+- PostgreSQL.
+- MongoDB.
+- Redis.
+- Firebase.
+- Supabase.
+- Docker.
+- Kubernetes.
+- Cloud databases.
+- External LLM APIs other than the configured GPT-4.1-mini endpoint.
+- Paid services apart from the API access already available.
+
+Everything must run on my local Windows machine.
+
+## 3. API configuration — IMPORTANT
+
+Create a `.env.example` file with clearly marked placeholders:
+
+```env
+# GPT-4.1-mini API configuration
+OPENAI_API_KEY=PASTE_YOUR_API_KEY_HERE
+OPENAI_BASE_URL=PASTE_YOUR_API_ENDPOINT_HERE
+OPENAI_MODEL=PASTE_YOUR_DEPLOYMENT_NAME_HERE
+
+# Local embedding configuration
+EMBEDDING_MODEL=sentence-transformers/all-MiniLM-L6-v2
+
+# Application configuration
+BACKEND_HOST=127.0.0.1
+BACKEND_PORT=8000
+FRONTEND_PORT=5173
+```
+
+Also create a `.env` file with the same keys left blank for me to fill.
+
+Requirements:
+- Never hardcode API keys or endpoints.
+- Load configuration using `python-dotenv`.
+- Validate missing API configuration and display helpful error messages.
+- Do not expose API keys in frontend code.
+- Never send API keys to the browser.
+- Add `.env` to `.gitignore`.
+- All LLM agents must use the same configured GPT-4.1-mini deployment.
+- Implement a centralized LLM client so model configuration is not duplicated across agents.
+- Support the configured OpenAI-compatible endpoint and deployment name.
+
+## 4. Multi-agent architecture
+
+Implement the following six agents using LangGraph.
+
+### Agent 1: Orchestrator Agent
+
+This is the central coordinator.
+
+Responsibilities:
+- Understand the student's request.
+- Decide which agents are required.
+- Delegate tasks to appropriate agents.
+- Maintain shared workflow state.
+- Collect and combine agent outputs.
+- Decide whether additional agent execution is needed.
+- Return the final response.
+
+It must use conditional routing rather than calling every agent for every request.
+
+Example:
+Student asks: "Prepare me for my DBMS exam in three days."
+
+The orchestrator should:
+1. Identify the task as exam preparation.
+2. Call Research Agent to inspect available DBMS material.
+3. Call Study Planner Agent to create a three-day plan.
+4. Call Tutor Agent to identify important topics and explain difficult concepts if necessary.
+5. Call Quiz Agent to generate a diagnostic quiz.
+6. Call Performance Agent after the quiz is completed.
+7. Combine the outputs into a final personalized preparation plan.
+
+### Agent 2: Research Agent
+
+Responsibilities:
+- Search uploaded PDFs through FAISS.
+- Retrieve the most relevant chunks.
+- Identify relevant topics and subtopics.
+- Extract important definitions and concepts.
+- Return source document names and page numbers.
+- Identify missing information.
+- Never invent information from documents.
+
+Tools:
+- `search_course_material(query)`
+- `get_document_information()`
+- `get_relevant_pages(query)`
+
+### Agent 3: Tutor Agent
+
+Responsibilities:
+- Explain concepts using retrieved course materials.
+- Provide beginner-friendly explanations.
+- Give step-by-step explanations.
+- Generate examples and analogies.
+- Answer follow-up questions.
+- Adjust explanation depth based on student preferences.
+- Identify prerequisite concepts when necessary.
+
+Explanation modes:
+- Simple explanation.
+- Detailed explanation.
+- Example-based explanation.
+- Exam-oriented explanation.
+
+### Agent 4: Quiz Agent
+
+Responsibilities:
+- Generate quizzes from uploaded documents.
+- Generate MCQs and short-answer questions.
+- Provide different difficulty levels.
+- Evaluate student responses.
+- Explain correct and incorrect answers.
+- Calculate scores.
+- Identify topics where the student struggles.
+
+Quiz requirements:
+- Questions must be grounded in uploaded material.
+- Include correct answers and explanations.
+- Do not reveal answers before the student submits.
+- Save completed quiz results locally.
+
+### Agent 5: Study Planner Agent
+
+Responsibilities:
+- Generate personalized study plans.
+- Consider available study time and exam dates.
+- Divide topics into manageable sessions.
+- Prioritize important and weak topics.
+- Include revision and practice sessions.
+- Adapt plans when quiz performance is poor.
+
+Example:
+Create a three-day DBMS exam preparation plan using uploaded PDFs.
+
+### Agent 6: Performance Agent
+
+Responsibilities:
+- Analyze quiz scores and historical performance.
+- Identify strong and weak topics.
+- Track progress across sessions.
+- Recommend topics for revision.
+- Provide actionable improvement suggestions.
+- Communicate weaknesses to the Study Planner Agent.
+
+Use saved JSON learning history as the source of persistent performance data.
+
+## 5. Agentic workflows
+
+Implement these workflows using LangGraph StateGraph, shared TypedDict state, conditional edges, and appropriate nodes.
+
+### Workflow A: Autonomous Exam Preparation
+
+Input:
+- Subject.
+- Exam date.
+- Available study hours.
+- Uploaded study materials.
+
+Execution:
+1. Orchestrator analyzes the request.
+2. Research Agent retrieves and categorizes relevant topics.
+3. Study Planner Agent creates a schedule.
+4. Tutor Agent identifies concepts that need explanations.
+5. Quiz Agent generates a diagnostic quiz.
+6. Performance Agent analyzes results after submission.
+7. Study Planner Agent updates the plan based on weak areas.
+8. Orchestrator presents the final preparation plan.
+
+### Workflow B: Adaptive Learning
+
+1. Student studies a topic.
+2. Tutor Agent explains the topic.
+3. Quiz Agent tests understanding.
+4. Performance Agent evaluates the score.
+5. If the score is low, Tutor Agent provides another explanation.
+6. Generate a new quiz.
+7. If performance improves, move to the next topic.
+8. Save progress locally.
+
+Use meaningful conditional routing and avoid infinite loops. Set a reasonable retry limit.
+
+### Workflow C: Revision Kit Generator
+
+Generate:
+- Important definitions.
+- Key concepts.
+- Short revision notes.
+- Important questions.
+- MCQs.
+- Commonly confused concepts.
+
+Ground the generated content in uploaded PDFs and include citations wherever possible.
+
+### Workflow D: Knowledge Gap Detection
+
+1. Analyze uploaded material.
+2. Identify major topics.
+3. Analyze quiz results.
+4. Compare topic performance.
+5. Identify weak or unstudied topics.
+6. Generate a prioritized learning recommendation.
+
+## 6. Local memory system
+
+Implement a simple local memory architecture.
+
+Use:
+- Python dictionaries for current session state.
+- JSON files for persistent student learning history.
+- Separate storage for documents, quiz results, plans, and preferences.
+
+Suggested structure:
+
+```text
+data/
+├── documents/
+├── faiss_index/
+└── memory/
+    ├── student_profile.json
+    ├── learning_history.json
+    ├── quiz_results.json
+    ├── study_plans.json
+    └── preferences.json
+```
+
+Requirements:
+- Store quiz results.
+- Store generated study plans.
+- Store weak and strong topics.
+- Preserve learning history between application restarts.
+- Handle missing or empty JSON files safely.
+- Avoid creating a database.
+
+## 7. Frontend requirements
+
+Build a modern, polished, responsive student dashboard.
+
+Use a clean academic AI-product design with a professional sidebar, cards, readable typography, subtle animations, and consistent spacing.
+
+Create these sections:
+
+### A. Dashboard
+Display:
+- Welcome section.
+- Uploaded documents count.
+- Total quizzes completed.
+- Average quiz score.
+- Current study plan.
+- Strongest topics.
+- Weakest topics.
+- Recent learning activity.
+
+### B. AI Study Chat
+Features:
+- Chat interface.
+- PDF-grounded answers.
+- Page citations.
+- Explanation modes.
+- Follow-up questions.
+- Display which agents contributed to the answer.
+
+### C. Document Library
+Features:
+- Upload PDF.
+- Show upload and processing progress.
+- List uploaded documents.
+- Delete documents.
+- Show processing status.
+- Display document details.
+
+### D. Study Planner
+Features:
+- Enter subject.
+- Enter exam date.
+- Enter available study hours.
+- Generate a personalized plan.
+- Display daily topics and tasks.
+- Allow the plan to be regenerated based on performance.
+
+### E. Quiz Center
+Features:
+- Select subject and topic.
+- Choose difficulty.
+- Generate MCQs.
+- Interactive quiz interface.
+- Submit answers.
+- Show score and explanations.
+- Save results.
+
+### F. Performance Analytics
+Display:
+- Quiz score history.
+- Topic-wise performance.
+- Strong topics.
+- Weak topics.
+- Improvement recommendations.
+
+### G. Agent Activity
+Display actual agent execution events:
+- Orchestrator routing decisions.
+- Research Agent retrieval activity.
+- Tutor Agent explanation generation.
+- Quiz Agent question generation.
+- Study Planner Agent schedule creation.
+- Performance Agent analysis.
+
+Show meaningful execution status and outputs.
+
+IMPORTANT:
+Do not hardcode fake agent activity. The frontend must receive actual backend execution events. Use Server-Sent Events (SSE) if practical; otherwise use a suitable real-time or polling mechanism.
+
+## 8. Backend API endpoints
+
+Implement clean REST endpoints:
+
+```text
+POST   /api/documents/upload
+GET    /api/documents
+DELETE /api/documents/{document_id}
+
+POST   /api/chat
+POST   /api/workflows/exam-preparation
+POST   /api/workflows/adaptive-learning
+POST   /api/workflows/revision-kit
+POST   /api/workflows/knowledge-gaps
+
+POST   /api/quiz/generate
+POST   /api/quiz/submit
+GET    /api/quiz/history
+
+POST   /api/study-plan/generate
+GET    /api/study-plan
+GET    /api/performance
+GET    /api/agents/activity
+
+GET    /api/health
+```
+
+Use Pydantic request and response models, appropriate HTTP status codes, and proper exception handling.
+
+## 9. Project folder structure
+
+Create a clean, modular structure similar to:
+
+```text
+study-buddy-agentic/
+│
+├── backend/
+│   ├── app/
+│   │   ├── agents/
+│   │   │   ├── orchestrator.py
+│   │   │   ├── research_agent.py
+│   │   │   ├── tutor_agent.py
+│   │   │   ├── quiz_agent.py
+│   │   │   ├── planner_agent.py
+│   │   │   └── performance_agent.py
+│   │   │
+│   │   ├── workflows/
+│   │   │   ├── graph_state.py
+│   │   │   ├── exam_prep.py
+│   │   │   ├── adaptive_learning.py
+│   │   │   ├── revision_kit.py
+│   │   │   └── knowledge_gaps.py
+│   │   │
+│   │   ├── rag/
+│   │   │   ├── pdf_processor.py
+│   │   │   ├── embeddings.py
+│   │   │   ├── vector_store.py
+│   │   │   └── retriever.py
+│   │   │
+│   │   ├── tools/
+│   │   │   └── learning_tools.py
+│   │   │
+│   │   ├── memory/
+│   │   │   └── memory_manager.py
+│   │   │
+│   │   ├── storage/
+│   │   │   └── json_storage.py
+│   │   │
+│   │   ├── api/
+│   │   │   ├── documents.py
+│   │   │   ├── chat.py
+│   │   │   ├── workflows.py
+│   │   │   ├── quizzes.py
+│   │   │   ├── study_plans.py
+│   │   │   └── performance.py
+│   │   │
+│   │   ├── core/
+│   │   │   ├── config.py
+│   │   │   └── llm.py
+│   │   │
+│   │   └── main.py
+│   │
+│   ├── requirements.txt
+│   └── tests/
+│
+├── frontend/
+│   ├── src/
+│   │   ├── components/
+│   │   ├── pages/
+│   │   ├── hooks/
+│   │   ├── services/
+│   │   ├── types/
+│   │   └── App.tsx
+│   ├── package.json
+│   └── vite.config.ts
+│
+├── data/
+│   ├── documents/
+│   ├── faiss_index/
+│   └── memory/
+│
+├── .env
+├── .env.example
+├── .gitignore
+└── README.md
+```
+
+You may adjust the structure if necessary, but maintain clear separation of responsibilities.
+
+## 10. Engineering requirements
+
+- Use modular, reusable code.
+- Avoid giant files.
+- Use type hints and Pydantic models.
+- Add useful logging.
+- Handle API failures and timeouts.
+- Handle empty document collections.
+- Handle malformed PDFs.
+- Handle missing API credentials.
+- Avoid unnecessary dependencies.
+- Avoid unnecessary abstractions.
+- Do not use mock agent responses in the real application.
+- Do not simulate successful API calls.
+- Do not claim a document was indexed unless indexing succeeded.
+- Keep the application easy to run and debug locally.
+
+## 11. Testing
+
+Create basic tests for:
+- PDF extraction.
+- Text chunking.
+- FAISS retrieval.
+- Citation generation.
+- Agent routing.
+- Quiz scoring.
+- JSON memory persistence.
+- Study plan generation.
+
+Run the tests and fix errors where possible.
+
+If the API key is unavailable, implement a clear configuration error and allow non-LLM components to be tested independently.
+
+## 12. Local execution
+
+Create a README with exact Windows PowerShell commands.
+
+Backend setup should resemble:
+
+```powershell
+cd backend
+python -m venv venv
+.\venv\Scripts\Activate.ps1
+pip install -r requirements.txt
+uvicorn app.main:app --reload --port 8000
+```
+
+Frontend setup:
+
+```powershell
+cd frontend
+npm install
+npm run dev
+```
+
+The frontend should run at:
+
+http://localhost:5173
+
+Backend API documentation should be available at:
+
+http://localhost:8000/docs
+
+Document where I need to paste my API key, endpoint, and deployment name.
+
+## 13. Implementation order — VERY IMPORTANT
+
+I need a working project quickly. Prioritize functional implementation over unnecessary complexity.
+
+Build in this order:
+
+1. Project folder structure and configuration.
+2. GPT-4.1-mini centralized API client.
+3. PDF upload, extraction, chunking, embeddings, and FAISS retrieval.
+4. Research Agent and Tutor Agent.
+5. LangGraph Orchestrator with conditional routing.
+6. Quiz Agent and quiz evaluation.
+7. Study Planner Agent.
+8. Performance Agent and local JSON memory.
+9. Autonomous Exam Preparation workflow.
+10. Adaptive Learning workflow.
+11. Revision Kit and Knowledge Gap workflows.
+12. Frontend dashboard and all main sections.
+13. Actual agent activity display.
+14. Testing, debugging, and README.
+
+Do not build all frontend pages as static placeholders before implementing the backend.
+
+After each major stage:
+- Check imports.
+- Check dependencies.
+- Run relevant tests.
+- Fix errors.
+- Continue to the next stage.
+
+## 14. Final expected demonstration
+
+The final application must support this end-to-end demonstration:
+
+1. Open Study Buddy AI locally.
+2. Upload a DBMS PDF.
+3. Ask: "Prepare me for my DBMS exam in three days. I can study three hours per day."
+4. Watch the Orchestrator delegate work to specialized agents.
+5. Research Agent retrieves DBMS topics from the PDF.
+6. Study Planner Agent creates a three-day schedule.
+7. Tutor Agent explains difficult concepts.
+8. Quiz Agent generates a DBMS diagnostic quiz.
+9. Student submits answers.
+10. Performance Agent identifies weak topics.
+11. Study Planner Agent adapts the schedule.
+12. Student can see the updated plan and learning progress.
+
+This demonstration must actually work using the configured GPT-4.1-mini API and local storage.
+
+## 15. Final instructions
+
+- Build everything inside the currently opened workspace.
+- Do not modify files outside this project.
+- Do not use my previous project's code unless I explicitly provide it.
+- Do not ask me to manually create individual files.
+- Create all folders and files yourself.
+- Leave API credentials as placeholders.
+- Never invent API endpoint formats.
+- Do not stop after generating the folder structure.
+- Continue implementation until the application is runnable.
+- If an API configuration detail is unknown, isolate it in the configuration layer and clearly document what I need to fill in.
+- Be transparent about incomplete features instead of presenting placeholders as completed functionality.
+
+At the end, provide:
+1. A summary of the implemented agents.
+2. An explanation of how LangGraph coordinates them.
+3. All required environment variables.
+4. Exact local setup and run commands.
+5. Any remaining limitations or incomplete features.
+
+**Primary objective: Deliver a genuinely agentic, multi-agent, locally running Study Buddy AI using only my GPT-4.1-mini API deployment, with a clean architecture and a working end-to-end demonstration.**
