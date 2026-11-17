@@ -2,6 +2,31 @@
 
 A locally run, PDF-grounded study workspace. Six specialized agents share LangGraph state to research course material, teach, create quizzes, plan study sessions, and analyze results. PDFs, FAISS indexes, plans, quizzes, preferences, agent activity, and learning history are stored under this project; there is no database service.
 
+## Application Screenshots
+
+### 1. Overview Dashboard
+![Overview Dashboard](screenshots/dashboard.png)
+
+### 2. AI Study Chat
+![AI Study Chat](screenshots/chat.png)
+
+### 3. Document Library
+![My Materials](screenshots/materials.png)
+
+### 4. Personalized Study Planner
+![Study Planner](screenshots/planner.png)
+
+### 5. Quiz Center
+![Quiz Center](screenshots/quiz.png)
+
+### 6. Performance Analytics
+![Performance Analytics](screenshots/performance.png)
+
+### 7. Agent Activity Monitor
+![Agent Activity](screenshots/agent-activity.png)
+
+---
+
 ## What is implemented
 
 - **Orchestrator Agent** makes a structured routing decision for each chat turn and delegates one specialist at a time through conditional LangGraph edges. It uses shared workflow state, limits cycles, and combines completed agent outputs.
